@@ -48,7 +48,38 @@ class SVD:
 
         return self._similarity(user_a, user_b)
 
+    def find_top_similar_items(self, n_top=10):
+        """
+        For each item looks for n_top the most similar items
+        :param n_top: number of similar items to look for
+        :return: map from item id to ids of its similar items
+        """
+        print("Calculate all item features norms for normalizing")
+        v_norms = np.zeros(self._V.shape[1])
+        ind = 0
+        for v in self._V.T:
+            v_norms[ind] = np.sqrt(np.dot(v, v))
+            ind += 1
+
+        print("Searching similar items")
+
+        ind = 0
+        similar_items = {}
+        for v in self._V.T:
+            similarities = np.divide(np.dot(v, self._V), v_norms)
+            similarities[ind] = np.inf  # for not returning element itself as the most similar
+            top_indices = np.argpartition(similarities, -n_top)[-n_top:]
+            top_indices_sorted = top_indices[np.argsort(similarities[top_indices])[::-1]]
+            similar_items[ind] = top_indices_sorted
+            ind += 1
+
+        return similar_items
+
     def train(self, scores, n_factor=100, max_iteration=2000, learning_rate=0.003, regularization=0.05):
+        """
+        Trains SVD model with user and item biases. Uses gradient descent with incremental learning approach
+        :param scores: map (user id, item id) -> score
+        """
         self._scores = scores
 
         # Need for arrays allocation
