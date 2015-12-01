@@ -11,23 +11,25 @@ class SVD:
 
         return
 
-    def _predict(self, u, v, user_bias, item_bias, mean):
+    @staticmethod
+    def _predict(u, v, user_bias, item_bias, mean):
         return mean + user_bias + item_bias + np.dot(u, v)
+
+    @staticmethod
+    def _similarity(a, b):
+        return np.dot(a, b)/np.sqrt(np.dot(a, a))/np.sqrt(np.dot(b, b))
 
     def _calculate_rmse(self):
         rmse = 0
         ratings_count = 0
         for ((user, item), rating) in self._scores.items():
-            predicted_score = self._predict(self._U[:, user], self._V[:, item],
+            predicted_score = SVD._predict(self._U[:, user], self._V[:, item],
                                             self._user_bias[user], self._item_bias[item], self._global_mean)
             rmse += np.square(rating - predicted_score)
             ratings_count += 1
 
         rmse /= ratings_count
         return np.sqrt(rmse)
-
-    def _similarity(self, a, b):
-        return np.dot(a, b)/np.sqrt(np.dot(a, a))/np.sqrt(np.dot(b, b))
 
     def item_similarity(self, item_id_a, item_id_b):
         if item_id_a >= self._V.shape[1] or item_id_b >= self._V.shape[1]:
@@ -36,7 +38,7 @@ class SVD:
 
         item_a = self._V[:, item_id_a]
         item_b = self._V[:, item_id_b]
-        return self._similarity(item_a, item_b)
+        return SVD._similarity(item_a, item_b)
 
     def user_similarity(self, user_id_a, user_id_b):
         if user_id_a >= self._U.shape[1] or user_id_b >= self._U.shape[1]:
@@ -46,7 +48,7 @@ class SVD:
         user_a = self._U[:, user_id_a]
         user_b = self._U[:, user_id_b]
 
-        return self._similarity(user_a, user_b)
+        return SVD._similarity(user_a, user_b)
 
     def find_top_similar_items(self, n_top=10):
         """
@@ -56,26 +58,21 @@ class SVD:
         """
         print("Calculate all item features norms for normalizing")
         v_norms = np.zeros(self._V.shape[1])
-        ind = 0
-        for v in self._V.T:
+        for ind, v in enumerate(self._V.T):
             v_norms[ind] = np.sqrt(np.dot(v, v))
-            ind += 1
 
         print("Searching similar items")
-
-        ind = 0
-        similar_items = {}
-        for v in self._V.T:
+        similar_items = []
+        for ind, v in enumerate(self._V.T):
             similarities = np.divide(np.dot(v, self._V), v_norms)
-            similarities[ind] = np.inf  # for not returning element itself as the most similar
+            similarities[ind] = -np.inf  # for not returning element itself as the most similar
             top_indices = np.argpartition(similarities, -n_top)[-n_top:]
             top_indices_sorted = top_indices[np.argsort(similarities[top_indices])[::-1]]
-            similar_items[ind] = top_indices_sorted
-            ind += 1
+            similar_items.append(top_indices_sorted.tolist())
 
         return similar_items
 
-    def train(self, scores, n_factor=100, max_iteration=2000, learning_rate=0.003, regularization=0.05):
+    def train(self, scores, n_factor=100, max_iteration=20000, learning_rate=0.003, regularization=0.05):
         """
         Trains SVD model with user and item biases. Uses gradient descent with incremental learning approach
         :param scores: map (user id, item id) -> score
@@ -107,7 +104,7 @@ class SVD:
                 b_u = self._user_bias[user_id]
                 b_i = self._item_bias[item_id]
 
-                predicted_score = self._predict(u, v, b_u, b_i, self._global_mean)
+                predicted_score = SVD._predict(u, v, b_u, b_i, self._global_mean)
                 error = score - predicted_score
 
                 k1 = 1-learning_rate*regularization
