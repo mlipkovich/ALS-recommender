@@ -72,7 +72,7 @@ class SVD:
 
         return similar_items
 
-    def train(self, scores, n_factor=100, max_iteration=20000, learning_rate=0.003, regularization=0.05):
+    def train(self, scores, n_factor=100, max_iteration=2000, learning_rate=0.003, regularization=0.05, eps=1e-5):
         """
         Trains SVD model with user and item biases. Uses gradient descent with incremental learning approach
         :param scores: map (user id, item id) -> score
@@ -92,10 +92,10 @@ class SVD:
         self._item_bias = np.random.rand(max_item_id + 1)
         self._global_mean = np.random.rand()
 
-        rmse_prev = self._calculate_rmse()
-        rmse = rmse_prev
+        rmse_prev = np.inf
+        rmse = self._calculate_rmse()
         n_iter = 0
-        while rmse <= rmse_prev and n_iter < max_iteration:
+        while (rmse_prev - rmse) > eps and n_iter < max_iteration:
             print("Starting iteration " + str(n_iter) + "; RMSE: " + str(rmse))
 
             for ((user_id, item_id), score) in self._scores.items():

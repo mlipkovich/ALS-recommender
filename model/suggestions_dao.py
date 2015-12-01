@@ -17,6 +17,7 @@ class SuggestionsDao:
             raise
 
     def store_suggestions(self, suggestions):
+        # TODO: Possibly do batch insert
         query = "INSERT INTO suggestions(movie_title, similar_movies)" \
                 "VALUES (%s, %s)"
 

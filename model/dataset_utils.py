@@ -74,8 +74,8 @@ class Utils:
         if movie_title.endswith(", the"):
             movie_title = movie_title[:-len(", the")]
 
-        movie_title = movie_title.replace(" a ", '').replace(" the ", '')
-        movie_title = movie_title.replace('&', 'and').replace(',', '').replace(' ', '').replace('\n', '')
+        movie_title = movie_title.replace(" a ", ' ').replace(" the ", ' ')
+        movie_title = movie_title.replace('&', "and").replace(',', '').replace(' ', '').replace('\n', '')
         return movie_title
 
     @staticmethod

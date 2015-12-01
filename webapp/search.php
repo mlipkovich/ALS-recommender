@@ -1,9 +1,10 @@
 <?php
-$servername = "";
-$username = "";
-$password = "";
-$db = "";
-$suggests_count = 10;
+$conf = parse_ini_file('../config.ini');
+$servername = $conf['host'];
+$username = $conf['user'];
+$password = $conf['passwd'];
+$db = $conf['db'];
+$suggests_count = $conf['suggests_count'];
 
 $conn =  mysql_connect($servername, $username, $password);
 
@@ -11,7 +12,7 @@ if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
 }
 
-mysql_select_db($db, $conn);
+mysql_select_db("movielens", $conn);
 
 $query = $_REQUEST['q'];
 $movies_arr = explode(',', $query);
