@@ -12,7 +12,7 @@ if ($conn->connect_error) {
   die("Connection failed: " . $conn->connect_error);
 }
 
-mysql_select_db($db, $conn);
+mysql_select_db("movielens", $conn);
 
 $query = $_REQUEST['q'];
 $movies_arr = explode(',', $query);
@@ -22,29 +22,21 @@ $movies = implode(',', $movies_arr);
 
 echo "<p><b>Your query:</b> $query</p>";
 
-$sql = mysql_query("SELECT movie_title, similar_movies FROM suggestions WHERE movie_title IN ($movies)");
+$sql = mysql_query("SELECT DISTINCT m.title
+  		            FROM normalized_movies AS n
+		              INNER JOIN similarities AS s
+		                ON n.movie_id = s.movie_id_from
+		              INNER JOIN movies m
+		                ON s.movie_id_to = m.id
+		            WHERE n.normalized_title IN ($movies)
+		            ORDER BY s.similarity DESC
+		            LIMIT $suggests_count");
 
 if (mysql_num_rows($sql)!=0) {
   echo "<p><b>Movies you will probably like: </b></p>";
 
   while ($row = mysql_fetch_array($sql)) {
-    $suggests_arr[$row['movie_title']] = explode(';', $row['similar_movies']);
-  }
-
-  // Select $suggests_count suggestions from suggestions for all movies
-  $suggests_arr = array_slice($suggests_arr, 0, $suggests_count);
-  $suggests_per_movie = floor($suggests_count/count($suggests_arr));
-  $suggests_extra = $suggests_count - $suggests_per_movie*count($suggests_arr);
-
-  foreach ($suggests_arr as $suggests) {
-    $display_count = $suggests_per_movie;
-    if ($suggests_extra > 0) {
-      $display_count += 1;
-      $suggests_extra -= 1;
-    }
-    foreach (array_slice($suggests, 0, $display_count) as $title) {
-      echo '<p>' . $title . '</p>';
-    }
+    echo '<p>' . $row['title'] . '</p>';
   }
 } else {
   echo "<p><b>No results found for your query</b></p>";
